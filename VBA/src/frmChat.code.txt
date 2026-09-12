@@ -1,0 +1,172 @@
+Option Explicit
+
+Private mBusy As Boolean
+
+'====================================================================
+Private Sub UserForm_Initialize()
+    On Error Resume Next
+    Me.Width = 620
+    Me.Height = 476
+    On Error GoTo 0
+
+    Me.Caption = APP_TITLE & "  —  " & CfgModel()
+    SetStatusSink Me
+
+    txtLog.Text = ""
+    AppendLine "🟢 أهلاً. اكتب طلبك بالعربي وأنا بنفّذه على الملف المفتوح."
+    AppendLine "   أمثلة:  ""اعملي عمود ضريبة ١٦٪ جنب المبلغ""  •  ""طابق عمود D مع H وقلي وين الفرق"""
+    AppendLine "   (Ctrl+Enter = إرسال)"
+    AppendLine ""
+    RefreshUndoBtn
+    lblStatus.Caption = "جاهز"
+End Sub
+
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    If mBusy Then
+        MsgBox "في طلب شغّال. استنّى يخلص.", vbInformation + vbMsgBoxRight, APP_TITLE
+        Cancel = 1
+        Exit Sub
+    End If
+    If CloseMode = vbFormControlMenu Then
+        SetStatusSink Nothing
+    End If
+End Sub
+
+'====================================================================
+' واجهة عامة يستخدمها modUI و modAgent
+'====================================================================
+Public Sub AgentStatus(ByVal s As String)
+    On Error Resume Next
+    lblStatus.Caption = IIf(Len(s) = 0, "جاهز", s)
+    Me.Repaint
+    DoEvents
+End Sub
+
+Public Sub FocusInput()
+    On Error Resume Next
+    txtInput.SetFocus
+End Sub
+
+Public Sub PrefillInput(ByVal s As String)
+    On Error Resume Next
+    txtInput.Text = s
+    txtInput.SetFocus
+    txtInput.SelStart = Len(s)
+End Sub
+
+Public Sub AskNow(ByVal q As String)
+    txtInput.Text = q
+    SendIt
+End Sub
+
+'====================================================================
+Private Sub btnSend_Click()
+    SendIt
+End Sub
+
+Private Sub txtInput_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+    ' Ctrl + Enter = إرسال
+    If KeyCode = 13 And (Shift And 2) = 2 Then
+        KeyCode = 0
+        SendIt
+    End If
+End Sub
+
+Private Sub SendIt()
+    Dim q As String
+    q = Trim$(txtInput.Text)
+    If Len(q) = 0 Then Exit Sub
+    If mBusy Then Exit Sub
+
+    mBusy = True
+    SetBusyUi True
+
+    AppendLine "──────────────────────────────"
+    AppendLine "🧑 " & q
+    AppendLine ""
+    txtInput.Text = ""
+    DoEvents
+
+    Dim ans As String
+    ans = AgentAsk(q)
+
+    AppendLine "🤖 " & ans
+    AppendLine ""
+
+    mBusy = False
+    SetBusyUi False
+    RefreshUndoBtn
+    lblStatus.Caption = "جاهز"
+    On Error Resume Next
+    txtInput.SetFocus
+End Sub
+
+Private Sub SetBusyUi(ByVal b As Boolean)
+    On Error Resume Next
+    btnSend.Enabled = Not b
+    btnSend.Caption = IIf(b, "... جاري العمل", "إرسال  (Ctrl+Enter)")
+    btnNew.Enabled = Not b
+    btnUndo.Enabled = Not b
+    btnSettings.Enabled = Not b
+    Me.Repaint
+End Sub
+
+'====================================================================
+Private Sub btnNew_Click()
+    If mBusy Then Exit Sub
+    If MsgBox("بدك تبدأ محادثة جديدة؟ (سجل الحوار الحالي بينمسح)", _
+              vbYesNo + vbQuestion + vbMsgBoxRight, APP_TITLE) <> vbYes Then Exit Sub
+    ResetConversation
+    txtLog.Text = ""
+    AppendLine "🟢 محادثة جديدة. تفضّل."
+    AppendLine ""
+    RefreshUndoBtn
+End Sub
+
+Private Sub btnUndo_Click()
+    If mBusy Then Exit Sub
+    Dim m As String
+    m = UndoLast()
+    AppendLine "↩ " & m
+    AppendLine ""
+    RefreshUndoBtn
+End Sub
+
+Private Sub btnSettings_Click()
+    If mBusy Then Exit Sub
+    ShowSettings
+    Me.Caption = APP_TITLE & "  —  " & CfgModel()
+End Sub
+
+Private Sub btnHelp_Click()
+    ShowHelp
+End Sub
+
+Private Sub btnCopy_Click()
+    On Error Resume Next
+    Dim dob As Object
+    Set dob = CreateObject("new:{1C3B4210-F441-11CE-B9EA-00AA006B1A69}")   ' DataObject
+    dob.SetText txtLog.Text
+    dob.PutInClipboard
+    lblStatus.Caption = "تم نسخ سجل المحادثة"
+End Sub
+
+'====================================================================
+Private Sub RefreshUndoBtn()
+    On Error Resume Next
+    Dim n As Long
+    n = UndoCount()
+    btnUndo.Caption = IIf(n > 0, "تراجع (" & n & ")", "تراجع")
+    btnUndo.Enabled = (n > 0)
+End Sub
+
+Private Sub AppendLine(ByVal s As String)
+    On Error Resume Next
+    Dim cur As String
+    cur = txtLog.Text
+    ' حماية من تضخم النص
+    If Len(cur) > 90000 Then cur = Right$(cur, 60000)
+    txtLog.Text = cur & s & vbCrLf
+    txtLog.SelStart = Len(txtLog.Text)
+    Me.Repaint
+End Sub
