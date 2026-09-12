@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+           xsi:type="TaskPaneApp">
+
+  <Id>7c1f4a2e-9b3d-4f56-8a71-2d6c5e0b91af</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>MaliAI</ProviderName>
+  <DefaultLocale>ar-JO</DefaultLocale>
+
+  <DisplayName DefaultValue="مساعد المحاسب"/>
+  <Description DefaultValue="مساعد ذكاء اصطناعي عربي داخل إكسل: بيكتب المعادلات، بينظّف البيانات، بيدقّق الأرقام، وبيعمل التقارير والرسوم."/>
+
+  <IconUrl DefaultValue="https://mshrwalhayk-ctrl.github.io/secure-upload-scanner/maliai/excel-addin-taskpane/docs/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://mshrwalhayk-ctrl.github.io/secure-upload-scanner/maliai/excel-addin-taskpane/docs/assets/icon-80.png"/>
+  <SupportUrl DefaultValue="https://mshrwalhayk-ctrl.github.io/secure-upload-scanner/maliai/excel-addin-taskpane/docs/"/>
+
+  <AppDomains>
+    <AppDomain>http://localhost:20128</AppDomain>
+    <AppDomain>https://openrouter.ai</AppDomain>
+    <AppDomain>https://api.groq.com</AppDomain>
+  </AppDomains>
+
+  <Hosts>
+    <Host Name="Workbook"/>
+  </Hosts>
+
+  <Requirements>
+    <Sets DefaultMinVersion="1.4">
+      <Set Name="ExcelApi" MinVersion="1.4"/>
+    </Sets>
+  </Requirements>
+
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://mshrwalhayk-ctrl.github.io/secure-upload-scanner/maliai/excel-addin-taskpane/docs/taskpane.html"/>
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Workbook">
+
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Desc"/>
+            <LearnMoreUrl resid="Url.Support"/>
+          </GetStarted>
+
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="MaliAI.Group">
+                <Label resid="Group.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16"/>
+                  <bt:Image size="32" resid="Icon.32"/>
+                  <bt:Image size="80" resid="Icon.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="MaliAI.OpenBtn">
+                  <Label resid="Btn.Label"/>
+                  <Supertip>
+                    <Title resid="Btn.Label"/>
+                    <Description resid="Btn.Tip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>MaliAITaskPane</TaskpaneId>
+                    <SourceLocation resid="Url.Taskpane"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16" DefaultValue="https://mshrwalhayk-ctrl.github.io/secure-upload-scanner/maliai/excel-addin-taskpane/docs/assets/icon-16.png"/>
+        <bt:Image id="Icon.32" DefaultValue="https://mshrwalhayk-ctrl.github.io/secure-upload-scanner/maliai/excel-addin-taskpane/docs/assets/icon-32.png"/>
+        <bt:Image id="Icon.80" DefaultValue="https://mshrwalhayk-ctrl.github.io/secure-upload-scanner/maliai/excel-addin-taskpane/docs/assets/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Url.Taskpane" DefaultValue="https://mshrwalhayk-ctrl.github.io/secure-upload-scanner/maliai/excel-addin-taskpane/docs/taskpane.html"/>
+        <bt:Url id="Url.Support" DefaultValue="https://mshrwalhayk-ctrl.github.io/secure-upload-scanner/maliai/excel-addin-taskpane/docs/"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="Group.Label" DefaultValue="مساعد المحاسب"/>
+        <bt:String id="Btn.Label" DefaultValue="مساعد المحاسب"/>
+        <bt:String id="GetStarted.Title" DefaultValue="مساعد المحاسب جاهز"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="Btn.Tip" DefaultValue="افتح اللوحة الجانبية واكتب طلبك بالعربي — المساعد بينفّذه على الشيت."/>
+        <bt:String id="GetStarted.Desc" DefaultValue="اضغط زر مساعد المحاسب في تبويب الصفحة الرئيسية، وحط مفتاح الذكاء الاصطناعي من الإعدادات."/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>
