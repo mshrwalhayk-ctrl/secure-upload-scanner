@@ -1,0 +1,29 @@
+Option Explicit
+
+Private Sub Workbook_Open()
+    On Error Resume Next
+    ' اختصار سريع لفتح المساعد
+    Application.OnKey "^+A", "'" & ThisWorkbook.Name & "'!ShowAssistant"
+    ' إذا ما حمّل الشريط لأي سبب، بنركّب قائمة احتياطية في تبويب Add-ins
+    Application.OnTime Now + TimeSerial(0, 0, 2), "'" & ThisWorkbook.Name & "'!CheckRibbonFallback"
+End Sub
+
+Private Sub Workbook_AddinInstall()
+    On Error Resume Next
+    MsgBox "تم تركيب إضافة """ & APP_TITLE & """ بنجاح." & vbCrLf & vbCrLf & _
+           "رح تلاقي تبويب جديد اسمه ""مساعد المحاسب"" في شريط إكسل." & vbCrLf & _
+           "أول خطوة: افتح الإعدادات وحط مفتاح الذكاء الاصطناعي.", _
+           vbInformation + vbMsgBoxRight, APP_TITLE
+End Sub
+
+Private Sub Workbook_AddinUninstall()
+    On Error Resume Next
+    Application.OnKey "^+A"
+    RemoveFallbackMenu
+End Sub
+
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+    On Error Resume Next
+    Application.OnKey "^+A"
+    RemoveFallbackMenu
+End Sub

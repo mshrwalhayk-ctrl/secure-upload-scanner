@@ -1,0 +1,265 @@
+Option Explicit
+
+Private Const P_COUNT As Long = 6
+Private mProv(0 To 5) As String
+Private mLoading As Boolean
+
+'====================================================================
+Private Sub UserForm_Initialize()
+    mLoading = True
+
+    On Error Resume Next
+    Me.Width = 600
+    Me.Height = 468
+    On Error GoTo 0
+
+    Me.Caption = APP_TITLE & " — الإعدادات"
+
+    mProv(0) = "omniroute"
+    mProv(1) = "nvidia"
+    mProv(2) = "openrouter"
+    mProv(3) = "groq"
+    mProv(4) = "custom"
+    mProv(5) = "anthropic"
+
+    Dim i As Long
+    cboProvider.Clear
+    For i = 0 To P_COUNT - 1
+        cboProvider.AddItem ProviderTitle(mProv(i))
+    Next i
+
+    cboFormat.Clear
+    cboFormat.AddItem "OpenAI  (‎/chat/completions)"
+    cboFormat.AddItem "Anthropic  (‎/messages)"
+
+    ' اختيار المزوّد المحفوظ
+    Dim cur As String
+    cur = CfgProvider()
+    cboProvider.ListIndex = 0
+    For i = 0 To P_COUNT - 1
+        If mProv(i) = cur Then cboProvider.ListIndex = i
+    Next i
+
+    chkFreeOnly.Value = CfgFreeOnly()
+    chkMacros.Value = CfgAllowMacros()
+    chkBackup.Value = CfgAutoBackup()
+    txtSteps.Text = CStr(CfgMaxSteps())
+
+    mLoading = False
+    LoadProviderFields
+    UpdateHint
+End Sub
+
+'====================================================================
+Private Function SelProvider() As String
+    Dim i As Long
+    i = cboProvider.ListIndex
+    If i < 0 Or i > P_COUNT - 1 Then i = 0
+    SelProvider = mProv(i)
+End Function
+
+Private Sub cboProvider_Change()
+    If mLoading Then Exit Sub
+    LoadProviderFields
+    UpdateHint
+End Sub
+
+Private Sub LoadProviderFields()
+    Dim p As String
+    p = SelProvider()
+
+    txtKey.Text = CfgApiKey(p)
+
+    cboModel.Clear
+    Dim m As String
+    m = CfgModel(p)
+    If Len(m) > 0 Then
+        cboModel.AddItem m
+        cboModel.Text = m
+    End If
+
+    Dim isCustom As Boolean
+    isCustom = (p = "custom")
+
+    ' OmniRoute ما بتحتاج مفتاح
+    txtKey.Enabled = (p <> "omniroute")
+    lblKey.Caption = IIf(p = "omniroute", _
+        "مفتاح API  (مش مطلوب لـ OmniRoute)", "مفتاح API  (بينحفظ على جهازك بس)")
+
+    txtBaseUrl.Enabled = isCustom
+    cboFormat.Enabled = isCustom
+    lblBaseUrl.Enabled = isCustom
+    lblFormat.Enabled = isCustom
+
+    If isCustom Then
+        txtBaseUrl.Text = CfgBaseUrl()
+        cboFormat.ListIndex = IIf(CfgApiFormat() = "anthropic", 1, 0)
+    Else
+        txtBaseUrl.Text = BaseUrlFor(p)
+        cboFormat.ListIndex = IIf(p = "anthropic", 1, 0)
+    End If
+End Sub
+
+Private Sub UpdateHint()
+    Dim p As String
+    p = SelProvider()
+    Select Case p
+        Case "omniroute"
+            lblHint.Caption = "بوابة محلية مجانية بتوحّد كل المزوّدين وبتضغط النص (توفير ~٨٩٪)." & vbCrLf & _
+                              "التركيب مرة وحدة من cmd:   npm i -g omniroute      ثم شغّلها:   omniroute"
+        Case "nvidia"
+            lblHint.Caption = "مجاني: سجّل على build.nvidia.com واطلب مفتاح يبدأ بـ nvapi-" & vbCrLf & _
+                              "فيه نماذج قوية جداً بتدعم استدعاء الأدوات (nemotron, kimi, deepseek)."
+        Case "openrouter"
+            lblHint.Caption = "مجاني: سجّل على openrouter.ai ← Keys ← أنشئ مفتاح." & vbCrLf & _
+                              "اضغط ""تحديث النماذج"" واختر أي نموذج عليه ★ مجاني."
+        Case "groq"
+            lblHint.Caption = "مجاني: سجّل على console.groq.com ← API Keys ← أنشئ مفتاح." & vbCrLf & _
+                              "كل نماذج Groq ضمن الطبقة المجانية (مع حد يومي للطلبات)."
+        Case "custom"
+            lblHint.Caption = "حط رابط الـ endpoint اللي إجاك مع المفتاح كما هو، بدون /chat/completions." & vbCrLf & _
+                              "مثال نمط OpenAI:  https://xxx.com/v1     ونمط Anthropic:  https://xxx.com/anthropic"
+        Case "anthropic"
+            lblHint.Caption = "⚠ هذا الخيار مدفوع بالاستهلاك (مش مجاني). المفتاح من console.anthropic.com"
+    End Select
+End Sub
+
+'====================================================================
+Private Sub btnRefresh_Click()
+    SaveCurrentFields               ' لازم المفتاح والرابط يكونوا محفوظين قبل الجلب
+
+    lblStatus.Caption = "... بجيب قائمة النماذج"
+    Me.Repaint
+    DoEvents
+
+    Dim errMsg As String
+    Dim lst As Collection
+    Set lst = ListModels(SelProvider(), errMsg)
+
+    If lst.Count = 0 Then
+        lblStatus.Caption = "✖ " & IIf(Len(errMsg) > 0, errMsg, "ما رجعت أي نماذج.")
+        Exit Sub
+    End If
+
+    Dim keep As String
+    keep = Trim$(cboModel.Text)
+
+    cboModel.Clear
+    Dim i As Long, item As String, id As String
+    For i = 1 To lst.Count
+        item = lst.Item(i)
+        id = Split(item, "|")(0)
+        cboModel.AddItem id & Space$(2) & "— " & Mid$(item, InStr(item, "|") + 1)
+    Next i
+
+    ' إعادة اختيار النموذج السابق إن وُجد
+    Dim found As Boolean
+    For i = 0 To cboModel.ListCount - 1
+        If Left$(cboModel.List(i), Len(keep)) = keep And Len(keep) > 0 Then
+            cboModel.ListIndex = i
+            found = True
+            Exit For
+        End If
+    Next i
+    If Not found Then cboModel.ListIndex = 0
+
+    lblStatus.Caption = "✔ " & lst.Count & " نموذج متاح" & _
+                        IIf(CfgFreeOnly(), " (المجاني فقط)", "")
+End Sub
+
+Private Sub chkFreeOnly_Click()
+    If mLoading Then Exit Sub
+    CfgSetFreeOnly (chkFreeOnly.Value)
+End Sub
+
+'--- استخراج معرّف النموذج من نص القائمة ----------------------------
+Private Function ModelIdFromBox() As String
+    Dim s As String
+    s = Trim$(cboModel.Text)
+    Dim p As Long
+    p = InStr(s, "  — ")
+    If p > 0 Then s = Left$(s, p - 1)
+    ModelIdFromBox = Trim$(s)
+End Function
+
+'====================================================================
+Private Sub btnTest_Click()
+    SaveCurrentFields
+
+    If Len(CfgApiKey()) < 5 And SelProvider() <> "omniroute" Then
+        lblStatus.Caption = "✖ حط المفتاح أولاً."
+        Exit Sub
+    End If
+
+    lblStatus.Caption = "... بجرّب الاتصال بالنموذج"
+    Me.Repaint
+    DoEvents
+
+    Dim e As String
+    e = TestConnection()
+    If Len(e) = 0 Then
+        lblStatus.Caption = "✔ الاتصال شغّال. بفحص دعم الأدوات..."
+        Me.Repaint
+        DoEvents
+        Dim t As String
+        t = TestToolSupport()
+        If Len(t) = 0 Then
+            lblStatus.Caption = "✔ ممتاز — الاتصال شغّال والنموذج بيدعم استدعاء الأدوات الأصلي."
+        Else
+            lblStatus.Caption = "✔ الاتصال شغّال. " & t
+        End If
+    Else
+        lblStatus.Caption = "✖ " & Left$(Replace(Replace(e, vbCrLf, " "), vbLf, " "), 230)
+    End If
+End Sub
+
+'====================================================================
+Private Sub btnSave_Click()
+    SaveCurrentFields
+    CfgSet "Provider", SelProvider()
+    MsgBox "تم حفظ الإعدادات.", vbInformation + vbMsgBoxRight, APP_TITLE
+    Me.Hide
+End Sub
+
+Private Sub btnCancel_Click()
+    Me.Hide
+End Sub
+
+'--- حفظ حقول المزوّد المختار (بدون تبديل المزوّد النشط) -------------
+Private Sub SaveCurrentFields()
+    Dim p As String
+    p = SelProvider()
+
+    CfgSetApiKey p, txtKey.Text
+
+    Dim modelId As String
+    modelId = ModelIdFromBox()
+    If Len(modelId) > 0 Then CfgSetModel p, modelId
+
+    If p = "custom" Then
+        CfgSetBaseUrl txtBaseUrl.Text
+        CfgSetApiFormat IIf(cboFormat.ListIndex = 1, "anthropic", "openai")
+    End If
+
+    CfgSetFreeOnly (chkFreeOnly.Value)
+    CfgSetAllowMacros (chkMacros.Value)
+    CfgSetAutoBackup (chkBackup.Value)
+
+    Dim n As Long
+    n = CLng(Val(txtSteps.Text))
+    If n < 3 Then n = 3
+    If n > 40 Then n = 40
+    CfgSet "MaxSteps", CStr(n)
+    txtSteps.Text = CStr(n)
+
+    ' المزوّد النشط يُحفظ فقط عند الضغط على حفظ، لكن الاختبار
+    ' لازم يشتغل على المزوّد المعروض، فنحفظه مؤقتاً هون كمان.
+    CfgSet "Provider", p
+End Sub
+
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    If CloseMode = vbFormControlMenu Then
+        Cancel = 1
+        Me.Hide
+    End If
+End Sub
