@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="RibbonOnLoad">
+  <ribbon>
+    <tabs>
+      <tab id="tabMaliAI" label="مساعد المحاسب" insertBeforeMso="TabHome">
+
+        <group id="grpMain" label="المساعد">
+          <button id="btnOpen" label="افتح المساعد" size="large"
+                  imageMso="ReviewNewComment" onAction="Rx_Open"
+                  screentip="افتح نافذة المحادثة مع المساعد"
+                  supertip="اكتب بالعربي شو بدك من الشيت، والمساعد بينفّذ."/>
+          <button id="btnFormula" label="اكتبلي معادلة" size="large"
+                  imageMso="AutoSum" onAction="Rx_Formula"
+                  screentip="توليد معادلة إكسل من وصف بالعربي"/>
+        </group>
+
+        <group id="grpQuick" label="أوامر سريعة">
+          <button id="btnExplain" label="اشرح الخلية المحددة" size="large"
+                  imageMso="FunctionWizard" onAction="Rx_Explain"
+                  screentip="شرح مفصّل للمعادلة الموجودة في الخلايا المحددة"/>
+          <button id="btnAudit" label="دقّق الورقة" size="large"
+                  imageMso="ErrorChecking" onAction="Rx_Audit"
+                  screentip="فحص الورقة كمراجع مالي: أخطاء، أرقام كنص، مجاميع غير مطابقة"/>
+        </group>
+
+        <group id="grpSafe" label="الأمان">
+          <button id="btnUndo" label="تراجع عن آخر تعديل" size="large"
+                  imageMso="Undo" onAction="Rx_Undo"
+                  screentip="إرجاع آخر تعديل عمله المساعد"/>
+          <button id="btnBackup" label="نسخة احتياطية" size="large"
+                  imageMso="FileSaveAs" onAction="Rx_Backup"
+                  screentip="حفظ نسخة احتياطية من الملف الحالي"/>
+        </group>
+
+        <group id="grpCfg" label="الإعدادات">
+          <button id="btnSettings" label="الإعدادات" size="large"
+                  imageMso="ControlProperties" onAction="Rx_Settings"
+                  screentip="المزوّد، المفتاح، النموذج، وخيارات الأمان"/>
+          <button id="btnHelp" label="مساعدة" size="large"
+                  imageMso="Help" onAction="Rx_Help"/>
+        </group>
+
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>
